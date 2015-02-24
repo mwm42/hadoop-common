@@ -36,8 +36,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
@@ -385,7 +387,8 @@ public class ShuffleHandler extends AuxiliaryService {
     }
     bootstrap.setPipelineFactory(pipelineFact);
     port = conf.getInt(SHUFFLE_PORT_CONFIG_KEY, DEFAULT_SHUFFLE_PORT);
-    Channel ch = bootstrap.bind(new InetSocketAddress(port));
+    Channel ch = bootstrap
+        .bind(new InetSocketAddress(getLocalHostName(), port));
     accepted.add(ch);
     port = ((InetSocketAddress)ch.getLocalAddress()).getPort();
     conf.set(SHUFFLE_PORT_CONFIG_KEY, Integer.toString(port));
@@ -404,6 +407,17 @@ public class ShuffleHandler extends AuxiliaryService {
     mapOutputMetaInfoCacheSize =
         Math.max(1, conf.getInt(SHUFFLE_MAPOUTPUT_META_INFO_CACHE_SIZE,
           DEFAULT_SHUFFLE_MAPOUTPUT_META_INFO_CACHE_SIZE));
+  }
+  
+  private String getLocalHostName() {
+    String hostName = "0.0.0.0";
+    try {
+      hostName = InetAddress.getLocalHost().getHostName();
+    } catch (UnknownHostException e) {
+      LOG.error("Failed to get the local host name. Proceeding with "
+          + hostName, e);
+    }
+    return hostName;
   }
 
   @Override
